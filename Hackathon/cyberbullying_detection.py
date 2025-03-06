@@ -1,0 +1,716 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 43,
+   "id": "70ef51b7-49a8-4ea9-8758-104c3a860d0b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import re\n",
+    "import nltk\n",
+    "from nltk.corpus import stopwords\n",
+    "from nltk.stem import PorterStemmer, WordNetLemmatizer\n",
+    "from sklearn.feature_extraction.text import TfidfVectorizer\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.linear_model import LogisticRegression\n",
+    "from sklearn.metrics import accuracy_score, classification_report\n",
+    "import streamlit as st"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "8f995ac0-f6ff-4dab-a17b-230392a1b9db",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = pd.read_csv(\"cyberbullying_tweets.csv\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "29d344b3-b481-4e91-8859-b7ec768669f8",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>tweet_text</th>\n",
+       "      <th>cyberbullying_type</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>In other words #katandandre, your food was cra...</td>\n",
+       "      <td>not_cyberbullying</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Why is #aussietv so white? #MKR #theblock #ImA...</td>\n",
+       "      <td>not_cyberbullying</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>@XochitlSuckkks a classy whore? Or more red ve...</td>\n",
+       "      <td>not_cyberbullying</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>@Jason_Gio meh. :P  thanks for the heads up, b...</td>\n",
+       "      <td>not_cyberbullying</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>@RudhoeEnglish This is an ISIS account pretend...</td>\n",
+       "      <td>not_cyberbullying</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                          tweet_text cyberbullying_type\n",
+       "0  In other words #katandandre, your food was cra...  not_cyberbullying\n",
+       "1  Why is #aussietv so white? #MKR #theblock #ImA...  not_cyberbullying\n",
+       "2  @XochitlSuckkks a classy whore? Or more red ve...  not_cyberbullying\n",
+       "3  @Jason_Gio meh. :P  thanks for the heads up, b...  not_cyberbullying\n",
+       "4  @RudhoeEnglish This is an ISIS account pretend...  not_cyberbullying"
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "99dd1c71-4eb8-4adf-8207-a2ed70bed4b9",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>tweet_text</th>\n",
+       "      <th>cyberbullying_type</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>47687</th>\n",
+       "      <td>Black ppl aren't expected to do anything, depe...</td>\n",
+       "      <td>ethnicity</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>47688</th>\n",
+       "      <td>Turner did not withhold his disappointment. Tu...</td>\n",
+       "      <td>ethnicity</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>47689</th>\n",
+       "      <td>I swear to God. This dumb nigger bitch. I have...</td>\n",
+       "      <td>ethnicity</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>47690</th>\n",
+       "      <td>Yea fuck you RT @therealexel: IF YOURE A NIGGE...</td>\n",
+       "      <td>ethnicity</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>47691</th>\n",
+       "      <td>Bro. U gotta chill RT @CHILLShrammy: Dog FUCK ...</td>\n",
+       "      <td>ethnicity</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                              tweet_text cyberbullying_type\n",
+       "47687  Black ppl aren't expected to do anything, depe...          ethnicity\n",
+       "47688  Turner did not withhold his disappointment. Tu...          ethnicity\n",
+       "47689  I swear to God. This dumb nigger bitch. I have...          ethnicity\n",
+       "47690  Yea fuck you RT @therealexel: IF YOURE A NIGGE...          ethnicity\n",
+       "47691  Bro. U gotta chill RT @CHILLShrammy: Dog FUCK ...          ethnicity"
+      ]
+     },
+     "execution_count": 5,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.tail()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "7fa86c93-e2e4-417c-9855-0c9a2963dcb5",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(47692, 2)"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "02f4216c-162c-4d0e-b327-12fef0a69f58",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "tweet_text            0\n",
+       "cyberbullying_type    0\n",
+       "dtype: int64"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.isnull().sum()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "b07c7039-333a-41d2-b970-d63f2323596f",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 47692 entries, 0 to 47691\n",
+      "Data columns (total 2 columns):\n",
+      " #   Column              Non-Null Count  Dtype \n",
+      "---  ------              --------------  ----- \n",
+      " 0   tweet_text          47692 non-null  object\n",
+      " 1   cyberbullying_type  47692 non-null  object\n",
+      "dtypes: object(2)\n",
+      "memory usage: 745.3+ KB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "905c4a91-8f15-41f7-b123-61766771bd52",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>tweet_text</th>\n",
+       "      <th>cyberbullying_type</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>count</th>\n",
+       "      <td>47692</td>\n",
+       "      <td>47692</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>unique</th>\n",
+       "      <td>46017</td>\n",
+       "      <td>6</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>top</th>\n",
+       "      <td>RT @sailorhg: the intro for my hardware hackin...</td>\n",
+       "      <td>religion</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>freq</th>\n",
+       "      <td>2</td>\n",
+       "      <td>7998</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                               tweet_text cyberbullying_type\n",
+       "count                                               47692              47692\n",
+       "unique                                              46017                  6\n",
+       "top     RT @sailorhg: the intro for my hardware hackin...           religion\n",
+       "freq                                                    2               7998"
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.describe()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "794fd39e-2c79-4cb1-a7de-f45d3765a0a4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#nltk.download('stopwords')\n",
+    "#nltk.download('wordnet')\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "b1ee4893-d213-43b7-91e1-85c14a35c76e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "stemmer = PorterStemmer()\n",
+    "lemmatizer = WordNetLemmatizer()\n",
+    "stop_words = set(stopwords.words('english'))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "id": "9883e9d4-0d28-42aa-a3d5-91df71c288ab",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def clean_text(text):\n",
+    "    text = re.sub(r'[^a-zA-Z]', ' ', text)  \n",
+    "    text = text.lower()  \n",
+    "    text = text.split()  \n",
+    "    text = [word for word in text if word not in stop_words]  \n",
+    "    text = [lemmatizer.lemmatize(word) for word in text]  \n",
+    "    return \" \".join(text)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "id": "0882040e-56bf-4999-984a-07b02590164e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df['clean_text'] = df['tweet_text'].apply(clean_text)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "id": "c7ac7d5a-1e78-4f06-ae32-7de69dcf3904",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>tweet_text</th>\n",
+       "      <th>clean_text</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>In other words #katandandre, your food was cra...</td>\n",
+       "      <td>word katandandre food crapilicious mkr</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Why is #aussietv so white? #MKR #theblock #ImA...</td>\n",
+       "      <td>aussietv white mkr theblock imacelebrityau tod...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>@XochitlSuckkks a classy whore? Or more red ve...</td>\n",
+       "      <td>xochitlsuckkks classy whore red velvet cupcake</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>@Jason_Gio meh. :P  thanks for the heads up, b...</td>\n",
+       "      <td>jason gio meh p thanks head concerned another ...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>@RudhoeEnglish This is an ISIS account pretend...</td>\n",
+       "      <td>rudhoeenglish isi account pretending kurdish a...</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                          tweet_text  \\\n",
+       "0  In other words #katandandre, your food was cra...   \n",
+       "1  Why is #aussietv so white? #MKR #theblock #ImA...   \n",
+       "2  @XochitlSuckkks a classy whore? Or more red ve...   \n",
+       "3  @Jason_Gio meh. :P  thanks for the heads up, b...   \n",
+       "4  @RudhoeEnglish This is an ISIS account pretend...   \n",
+       "\n",
+       "                                          clean_text  \n",
+       "0             word katandandre food crapilicious mkr  \n",
+       "1  aussietv white mkr theblock imacelebrityau tod...  \n",
+       "2     xochitlsuckkks classy whore red velvet cupcake  \n",
+       "3  jason gio meh p thanks head concerned another ...  \n",
+       "4  rudhoeenglish isi account pretending kurdish a...  "
+      ]
+     },
+     "execution_count": 25,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df[['tweet_text', 'clean_text']].head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "id": "78472d0c-6e58-4767-b861-b51346b2f91f",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "    aa  aalwuhaib   ab  abc  abdul  ability  able  ableist  abortion  abroad  \\\n",
+      "0  0.0        0.0  0.0  0.0    0.0      0.0   0.0      0.0       0.0     0.0   \n",
+      "1  0.0        0.0  0.0  0.0    0.0      0.0   0.0      0.0       0.0     0.0   \n",
+      "2  0.0        0.0  0.0  0.0    0.0      0.0   0.0      0.0       0.0     0.0   \n",
+      "3  0.0        0.0  0.0  0.0    0.0      0.0   0.0      0.0       0.0     0.0   \n",
+      "4  0.0        0.0  0.0  0.0    0.0      0.0   0.0      0.0       0.0     0.0   \n",
+      "\n",
+      "   ...  zaibatsunews  zappe  zero   zh  zimmerman  zionist  zoe  zone  zxbzv  \\\n",
+      "0  ...           0.0    0.0   0.0  0.0        0.0      0.0  0.0   0.0    0.0   \n",
+      "1  ...           0.0    0.0   0.0  0.0        0.0      0.0  0.0   0.0    0.0   \n",
+      "2  ...           0.0    0.0   0.0  0.0        0.0      0.0  0.0   0.0    0.0   \n",
+      "3  ...           0.0    0.0   0.0  0.0        0.0      0.0  0.0   0.0    0.0   \n",
+      "4  ...           0.0    0.0   0.0  0.0        0.0      0.0  0.0   0.0    0.0   \n",
+      "\n",
+      "   zython  \n",
+      "0     0.0  \n",
+      "1     0.0  \n",
+      "2     0.0  \n",
+      "3     0.0  \n",
+      "4     0.0  \n",
+      "\n",
+      "[5 rows x 5000 columns]\n"
+     ]
+    }
+   ],
+   "source": [
+    "tfidf = TfidfVectorizer(max_features=5000)  # Use top 5000 features\n",
+    "\n",
+    "# Transform text data\n",
+    "X_tfidf = tfidf.fit_transform(df['clean_text'])\n",
+    "\n",
+    "# Convert to DataFrame\n",
+    "X_tfidf_df = pd.DataFrame(X_tfidf.toarray(), columns=tfidf.get_feature_names_out())\n",
+    "\n",
+    "# Check transformed features\n",
+    "print(X_tfidf_df.head())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "id": "31ec5dbe-388a-4781-81a0-0d1cfeeb0add",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(47692, 5000)\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(X_tfidf_df.shape)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 28,
+   "id": "138fc402-3ceb-4279-887a-0d413aca3da3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X = X_tfidf_df\n",
+    "y = df['cyberbullying_type']  # Target labels\n",
+    "\n",
+    "# Split into train & test sets\n",
+    "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 29,
+   "id": "62ee2a62-ec97-4429-a9ec-c84d4235a94c",
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "AttributeError",
+     "evalue": "'Series' object has no attribute 'shapr'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[1;31mAttributeError\u001b[0m                            Traceback (most recent call last)",
+      "\u001b[1;32m~\\AppData\\Local\\Temp\\ipykernel_2572\\1982329103.py\u001b[0m in \u001b[0;36m?\u001b[1;34m()\u001b[0m\n\u001b[1;32m----> 1\u001b[1;33m \u001b[0mX\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mshape\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0my\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0mshapr\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m",
+      "\u001b[1;32m~\\anaconda3\\Lib\\site-packages\\pandas\\core\\generic.py\u001b[0m in \u001b[0;36m?\u001b[1;34m(self, name)\u001b[0m\n\u001b[0;32m   6295\u001b[0m             \u001b[1;32mand\u001b[0m \u001b[0mname\u001b[0m \u001b[1;32mnot\u001b[0m \u001b[1;32min\u001b[0m \u001b[0mself\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0m_accessors\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m   6296\u001b[0m             \u001b[1;32mand\u001b[0m \u001b[0mself\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0m_info_axis\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0m_can_hold_identifiers_and_holds_name\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mname\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0;32m   6297\u001b[0m         ):\n\u001b[0;32m   6298\u001b[0m             \u001b[1;32mreturn\u001b[0m \u001b[0mself\u001b[0m\u001b[1;33m[\u001b[0m\u001b[0mname\u001b[0m\u001b[1;33m]\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[1;32m-> 6299\u001b[1;33m         \u001b[1;32mreturn\u001b[0m \u001b[0mobject\u001b[0m\u001b[1;33m.\u001b[0m\u001b[0m__getattribute__\u001b[0m\u001b[1;33m(\u001b[0m\u001b[0mself\u001b[0m\u001b[1;33m,\u001b[0m \u001b[0mname\u001b[0m\u001b[1;33m)\u001b[0m\u001b[1;33m\u001b[0m\u001b[1;33m\u001b[0m\u001b[0m\n\u001b[0m",
+      "\u001b[1;31mAttributeError\u001b[0m: 'Series' object has no attribute 'shapr'"
+     ]
+    }
+   ],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": none,
+   "id": "95ac60e7-cc91-422b-b834-c4cca97e0171",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": none,
+   "id": "cdb8f5a5-efa1-44aa-a687-f5aad2f6314f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "category_descriptions = {\n",
+    "    \"not_cyberbullying\": \"The input text does not contain cyberbullying content.\",\n",
+    "    \"gender\": \"The input text contains cyberbullying based on gender.\",\n",
+    "    \"religion\": \"The input text contains cyberbullying based on religion.\",\n",
+    "    \"other_cyberbullying\": \"The input text contains other forms of cyberbullying.\",\n",
+    "    \"age\": \"The input text contains cyberbullying based on age.\",\n",
+    "    \"ethnicity\": \"The input text contains cyberbullying based on ethnicity.\"\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": none,
+   "id": "013f9da3-6e9d-406c-9a2c-b5af62f8105a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "category_definitions = {\n",
+    "    \"not_cyberbullying\": \"Cyberbullying is not detected in the given input.\",\n",
+    "    \"gender\": \"Gender-based cyberbullying involves targeting someone based on their gender identity, using sexist remarks, stereotypes, or discrimination.\",\n",
+    "    \"religion\": \"Religion-based cyberbullying involves attacking or mocking someone due to their religious beliefs, often leading to hate speech.\",\n",
+    "    \"other_cyberbullying\": \"This category includes various forms of cyberbullying that do not fit into specific categories like age, gender, or religion.\",\n",
+    "    \"age\": \"Age-based cyberbullying targets individuals based on their age, often discriminating against younger or older groups.\",\n",
+    "    \"ethnicity\": \"Ethnicity-based cyberbullying involves discrimination, stereotypes, or offensive comments directed at a person’s ethnic background.\"\n",
+    "}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 45,
+   "id": "22f12bf3-a05d-42d8-b992-cc1ef40a02fa",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "2025-03-06 14:10:20.222 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.347 \n",
+      "  \u001b[33m\u001b[1mWarning:\u001b[0m to view this Streamlit app on a browser, run it with the following\n",
+      "  command:\n",
+      "\n",
+      "    streamlit run C:\\Users\\theja\\anaconda3\\Lib\\site-packages\\ipykernel_launcher.py [ARGUMENTS]\n",
+      "2025-03-06 14:10:20.348 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.348 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.348 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.349 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.349 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.350 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.350 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.351 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.351 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.351 Session state does not function when running a script without `streamlit run`\n",
+      "2025-03-06 14:10:20.352 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.352 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.353 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.353 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.354 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.354 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n",
+      "2025-03-06 14:10:20.354 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.\n"
+     ]
+    }
+   ],
+   "source": [
+    "st.title(\"🔍 Cyberbullying Detection System\")\n",
+    "\n",
+    "st.write(\"Enter a tweet or text below to check if it contains cyberbullying.\")\n",
+    "\n",
+    "user_input = st.text_area(\"Enter your text here:\")\n",
+    "\n",
+    "if st.button(\"Detect Cyberbullying\"):\n",
+    "    if user_input.strip():\n",
+    "        cleaned_text = clean_text(user_input)\n",
+    "        transformed_text = tfidf.transform([cleaned_text])\n",
+    "        predicted_label = model.predict(transformed_text)[0]\n",
+    "\n",
+    "        st.subheader(f\"The input value is **{predicted_label}**.\")\n",
+    "        st.write(category_descriptions[predicted_label])\n",
+    "        st.write(f\"📌 **What is {predicted_label}?** {category_definitions[predicted_label]}\")\n",
+    "    else:\n",
+    "        st.warning(\"⚠️ Please enter some text to analyze.\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": none,
+   "id": "f5d569ae-8fab-4090-afb0-10ab7e217848",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pip install tk\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": none,
+   "id": "c1a68932-59e9-4f1e-8d0a-0a18f3e9216e",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": none,
+   "id": "c8a11a56-2b12-411f-a54d-e7703141e0ab",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
