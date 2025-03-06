@@ -55,8 +55,16 @@ The dataset used for this project is `cyberbullying_tweets.csv`, which contains 
 - The model classifies tweets into different cyberbullying categories with good accuracy.
 - Performance metrics such as precision, recall, and F1-score are used to evaluate the model.
 
+## Future Enhancements
+- **Deep Learning Models:** Implement deep learning techniques like LSTMs or transformers (BERT) to improve classification accuracy.
+- **Data Augmentation:** Expand the dataset with more labeled tweets to enhance model performance.
+- **Real-time Detection:** Develop a real-time cyberbullying detection system for social media monitoring.
+- **Multi-class Classification:** Improve handling of multiple cyberbullying categories for better granularity.
+- **Explainability & Interpretability:** Integrate SHAP or LIME to interpret model predictions.
+
 ## Contributing
 Feel free to open issues or submit pull requests for improvements!
 
 ## License
 This project is licensed under the MIT License.
+
